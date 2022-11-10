@@ -41,7 +41,15 @@ app.post("/participants", async (req,res) => {
     } catch (erro) {console.log(erro)}
 })
 
+app.get("/participants", async (req,res) => {
+    let users;
+    
+    try {
+         users = await collectionUsers.find().toArray()
+    } catch (erro) {console.log(erro)} 
 
+    res.send(users)
+})
 
 
 app.listen(process.env.PORT, () => console.log(`Server running in port: ${process.env.PORT}`))
