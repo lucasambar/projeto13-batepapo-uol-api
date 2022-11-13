@@ -143,6 +143,10 @@ setInterval(async () => {
             users.forEach(async (user) => {
                 if (Date.now() - 10000 > user.lastStatus) {
                     await collectionUsers.deleteOne({ _id: user._id});
+
+                    const time = (dayjs().format('HH:mm:ss', 'es'))
+                    const message = {from: user.name, to: 'Todos', text: 'sai da sala...', type: 'status', time: time}
+                    await collectionMessages.insertOne(message)
                 }
             })
         }
