@@ -2,7 +2,9 @@ import express from "express";
 import dotenv from "dotenv";
 import cors from 'cors';
 import { MongoClient } from "mongodb";
-import daysjs from "dayjs"
+import dayjs from "dayjs";
+import joi from 'joi';
+
 
 //CONFIGURAÇÕES
 dotenv.config();
@@ -21,20 +23,34 @@ try {
 const collectionUsers = mongoClient.db("uol").collection("users")
 const collectionMessages = mongoClient.db("uol").collection("messages")
 
+//joi schema
+const userSchema = joi.object({
+    name: joi.string().required(),
+ })
 
 //post participants
 app.post("/participants", async (req,res) => {
     const {name} = req.body
 
-    if (!name) {res.status(422).send("'Name' deve ser strings, não vazio!")}
+    // const validation = await userSchema.validate(req.body, {abortEarly: false})
+    // if (validation.err) {
+    //     const err = details.map((detail) => detail.message);
+    //     res.status(422).send(err);
+    //     return
+    // }
+    
+    const exist = await collectionUsers.findOne({name: name})
+    if (exist) {res.sendStatus(409);return}
 
     const user = {name,lastStatus: Date.now()}
     try {
         await collectionUsers.insertOne(user)
     } catch (erro) {console.log(erro)} 
 
+    let time = (dayjs().format('HH:mm:ss', 'es'))
 
-    const message = {from: name, to: 'Todos', text: 'entra na sala...', type: 'status', time: 'HH:MM:SS'}
+    const message = {from: name, to: 'Todos', text: 'entra na sala...', type: 'status', time: time}
+    console.log(message)
     try {
         await collectionMessages.insertOne(message)
         res.sendStatus(201)
