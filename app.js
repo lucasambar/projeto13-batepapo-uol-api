@@ -90,4 +90,32 @@ app.post("/messages", async (req,res) => {
     } catch (erro) {console.log(erro)}
 })
 
+app.get("/messages", async (req,res) => {
+    let limit;
+    if (parseInt(req.query.limit)) {
+        limit = parseInt(req.query.limit)
+    }
+
+    let messagesDB;
+    try {
+        messagesDB = await collectionMessages.find().toArray()
+    } catch (erro) {console.log(erro)}     
+
+    let {user} = req.headers
+    const messagesFilter = messagesDB.filter((mes) => {
+        if (mes.to === user || mes.to === "Todos"){
+            return mes
+        }})
+    
+    const messagesReverse = messagesFilter.reverse()
+
+    if (limit) {
+        const messages = messagesReverse.slice(0, limit)
+        res.send(messages)
+    } else {
+        res.send(messagesReverse)
+    }
+    
+})
+
 app.listen(process.env.PORT, () => console.log(`Server running in port: ${process.env.PORT}`))
