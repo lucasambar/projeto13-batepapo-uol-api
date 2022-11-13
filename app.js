@@ -102,9 +102,9 @@ app.get("/messages", async (req,res) => {
     } catch (erro) {console.log(erro)}     
 
     let {user} = req.headers
-    const messagesFilter = messagesDB.filter((mes) => {
-        if (mes.to === user || mes.to === "Todos"){
-            return mes
+    const messagesFilter = messagesDB.filter((message) => {
+        if (message.to === user || message.to === "Todos"){
+            return message
         }})
     
     const messagesReverse = messagesFilter.reverse()
@@ -116,6 +116,23 @@ app.get("/messages", async (req,res) => {
         res.send(messagesReverse)
     }
     
+})
+
+app.post("/status", async(req,res) => {
+    const {user} = req.headers
+
+    let userFind;
+    try {
+        userFind = await collectionUsers.findOne({name: user})
+    } catch (err) {res.sendStatus(500); console.log(err)}
+
+    if (!userFind) {res.sendStatus(404); return}
+
+    try {
+        await collectionUsers.updateOne({_id: userFind._id},{$set: {lastStatus: Date.now()}})
+    } catch (err) {res.sendStatus(500); console.log(err)}
+
+    res.sendStatus(200)
 })
 
 app.listen(process.env.PORT, () => console.log(`Server running in port: ${process.env.PORT}`))
