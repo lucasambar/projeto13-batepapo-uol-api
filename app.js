@@ -26,7 +26,10 @@ const collectionMessages = mongoClient.db("uol").collection("messages")
 //joi schema
 const userSchema = joi.object({
     name: joi.string().required(),
- })
+})
+const messageSchema = joi.object({
+    to: joi.string()
+})
 
 //post participants
 app.post("/participants", async (req,res) => {
@@ -67,5 +70,24 @@ app.get("/participants", async (req,res) => {
     res.send(users)
 })
 
+app.post("/messages", async (req,res) => {
+    const {user} = req.headers //from
+
+    const exist = await collectionUsers.findOne({name: user})
+    if (!exist) {res.status(422).send("Usuário não cadastrado");return}
+
+    const {to, text, type} = req.body
+
+    //verificar req.body
+
+    const time = (dayjs().format('HH:mm:ss', 'es'))
+
+    const message = {from: user, to: to, text: text, type: type, time: time}
+
+    try {
+        await collectionMessages.insertOne(message)
+        res.status(201).send(message)
+    } catch (erro) {console.log(erro)}
+})
 
 app.listen(process.env.PORT, () => console.log(`Server running in port: ${process.env.PORT}`))
