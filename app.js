@@ -135,4 +135,19 @@ app.post("/status", async(req,res) => {
     res.sendStatus(200)
 })
 
+//remoção de usuarios inativos
+setInterval(async () => {
+    try {
+        const users = await collectionUsers.find().toArray()
+        if (users) {
+            users.forEach(async (user) => {
+                if (Date.now() - 10000 > user.lastStatus) {
+                    await collectionUsers.deleteOne({ _id: user._id});
+                }
+            })
+        }
+    } catch (err) {console.log(err)}
+}, 15000)
+
+
 app.listen(process.env.PORT, () => console.log(`Server running in port: ${process.env.PORT}`))
