@@ -1,7 +1,7 @@
 import express from "express";
 import dotenv from "dotenv";
 import cors from 'cors';
-import { MongoClient } from "mongodb";
+import { MongoClient, ObjectId } from "mongodb";
 import dayjs from "dayjs";
 import joi from 'joi';
 
@@ -38,7 +38,7 @@ app.post("/participants", async (req,res) => {
     const {name} = req.body
 
     const validation = await userSchema.validate(req.body, {abortEarly: false})
-    console.log(validation)
+
     if (validation.error) {
         const error = validation.error.details.map((detail) => detail.message);
         res.status(422).send(error);
@@ -82,7 +82,7 @@ app.post("/messages", async (req,res) => {
     const {to, text, type} = req.body
 
     const validation = await messageSchema.validate(req.body, {abortEarly: false})
-    console.log(validation)
+
     if (validation.error) {
         const error = validation.error.details.map((detail) => detail.message);
         res.status(422).send(error);
@@ -167,7 +167,7 @@ app.delete("/messages/:idMsg", async (req,res) => {
     const id = req.params.idMsg
 
     try {
-        const msgFind = await collectionMessages.findOne({_id: id})
+        const msgFind = await collectionMessages.findOne({_id: ObjectId(id)})
         if (!msgFind) {
             res.sendStatus(404)
             return 
@@ -178,17 +178,17 @@ app.delete("/messages/:idMsg", async (req,res) => {
         }  
     } catch (err) {res.sendStatus(500); console.log(err)} 
     
-    await collectionMessages.deleteOne({ _id: id});
+    await collectionMessages.deleteOne({ _id: ObjectId(id)});
 
     res.sendStatus(200)
 })
 
 app.put("/messages/:idMsg", async (req, res) => {
     const id = req.params.idMsg
-    const user = req.headers //from
+    const {user} = req.headers //from
 
     try {
-        const msgFind = await collectionMessages.findOne({_id: id})
+        const msgFind = await collectionMessages.findOne({_id: ObjectId(id)})
         if (!msgFind) {
             res.sendStatus(404)
             return 
@@ -208,7 +208,20 @@ app.put("/messages/:idMsg", async (req, res) => {
         res.status(422).send(error);
         return
     }
-    
+    try {
+        await collectionMessages.updateOne(
+            { _id: ObjectId(id) },
+            { $set:
+               {
+                to,
+                text,
+                type
+               }
+            }
+         )
+    } catch (erro) {res.sendStatus(500); console.log(erro);return}
+
+    res.sendStatus(200)
 })
 
 app.listen(process.env.PORT, () => console.log(`Server running in port: ${process.env.PORT}`))
