@@ -28,7 +28,9 @@ const userSchema = joi.object({
     name: joi.string().required(),
 })
 const messageSchema = joi.object({
-    to: joi.string()
+    to: joi.string().required(),
+    text: joi.string().required(),
+    type: joi.any().allow( 'message','private_message')
 })
 
 //post participants
@@ -36,9 +38,10 @@ app.post("/participants", async (req,res) => {
     const {name} = req.body
 
     const validation = await userSchema.validate(req.body, {abortEarly: false})
-    if (validation.err) {
-        const err = details.map((detail) => detail.message);
-        res.status(422).send(err);
+    console.log(validation)
+    if (validation.error) {
+        const error = validation.error.details.map((detail) => detail.message);
+        res.status(422).send(error);
         return
     }
     
@@ -53,7 +56,7 @@ app.post("/participants", async (req,res) => {
     let time = (dayjs().format('HH:mm:ss', 'es'))
 
     const message = {from: name, to: 'Todos', text: 'entra na sala...', type: 'status', time: time}
-    console.log(message)
+
     try {
         await collectionMessages.insertOne(message)
         res.sendStatus(201)
@@ -78,8 +81,14 @@ app.post("/messages", async (req,res) => {
 
     const {to, text, type} = req.body
 
-    //verificar req.body
-
+    const validation = await messageSchema.validate(req.body, {abortEarly: false})
+    console.log(validation)
+    if (validation.error) {
+        const error = validation.error.details.map((detail) => detail.message);
+        res.status(422).send(error);
+        return
+    }
+    
     const time = (dayjs().format('HH:mm:ss', 'es'))
 
     const message = {from: user, to: to, text: text, type: type, time: time}
@@ -157,23 +166,49 @@ app.delete("/messages/:idMsg", async (req,res) => {
     const {user} = req.headers
     const id = req.params.idMsg
 
-    let msgFind;
     try {
-        msgFind = await collectionMessages.findOne({_id: id})
+        const msgFind = await collectionMessages.findOne({_id: id})
         if (!msgFind) {
             res.sendStatus(404)
             return 
         } 
+        if (msgFind.from !== user) {
+            res.sendStatus(402)
+            return
+        }  
     } catch (err) {res.sendStatus(500); console.log(err)} 
     
-    if (msgFind.from !== user) {
-        res.sendStatus(402)
-        return
-    }
-
     await collectionMessages.deleteOne({ _id: id});
 
     res.sendStatus(200)
+})
+
+app.put("/messages/:idMsg", async (req, res) => {
+    const id = req.params.idMsg
+    const user = req.headers //from
+
+    try {
+        const msgFind = await collectionMessages.findOne({_id: id})
+        if (!msgFind) {
+            res.sendStatus(404)
+            return 
+        } 
+        if (msgFind.from !== user) {
+            res.sendStatus(402)
+            return
+        }
+    } catch (err) {res.sendStatus(500); console.log(err)}
+
+    const {to, text, type} = req.body
+
+    const validation = await messageSchema.validate(req.body, {abortEarly: false})
+    console.log(validation)
+    if (validation.error) {
+        const error = validation.error.details.map((detail) => detail.message);
+        res.status(422).send(error);
+        return
+    }
+    
 })
 
 app.listen(process.env.PORT, () => console.log(`Server running in port: ${process.env.PORT}`))
