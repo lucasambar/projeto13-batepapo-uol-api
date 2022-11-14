@@ -35,12 +35,12 @@ const messageSchema = joi.object({
 app.post("/participants", async (req,res) => {
     const {name} = req.body
 
-    // const validation = await userSchema.validate(req.body, {abortEarly: false})
-    // if (validation.err) {
-    //     const err = details.map((detail) => detail.message);
-    //     res.status(422).send(err);
-    //     return
-    // }
+    const validation = await userSchema.validate(req.body, {abortEarly: false})
+    if (validation.err) {
+        const err = details.map((detail) => detail.message);
+        res.status(422).send(err);
+        return
+    }
     
     const exist = await collectionUsers.findOne({name: name})
     if (exist) {res.sendStatus(409);return}
@@ -153,5 +153,27 @@ setInterval(async () => {
     } catch (err) {console.log(err)}
 }, 15000)
 
+app.delete("/messages/:idMsg", async (req,res) => {
+    const {user} = req.headers
+    const id = req.params.idMsg
+
+    let msgFind;
+    try {
+        msgFind = await collectionMessages.findOne({_id: id})
+        if (!msgFind) {
+            res.sendStatus(404)
+            return 
+        } 
+    } catch (err) {res.sendStatus(500); console.log(err)} 
+    
+    if (msgFind.from !== user) {
+        res.sendStatus(402)
+        return
+    }
+
+    await collectionMessages.deleteOne({ _id: id});
+
+    res.sendStatus(200)
+})
 
 app.listen(process.env.PORT, () => console.log(`Server running in port: ${process.env.PORT}`))
