@@ -115,14 +115,12 @@ app.get("/messages", async (req,res) => {
         if (message.to === user || message.to === "Todos"){
             return message
         }})
-    
-    const messagesReverse = messagesFilter.reverse()
 
     if (limit) {
-        const messages = messagesReverse.slice(0, limit)
+        const messages = messagesFilter.slice(0, limit)
         res.send(messages)
     } else {
-        res.send(messagesReverse)
+        res.send(messagesFilter)
     }
     
 })
@@ -202,12 +200,13 @@ app.put("/messages/:idMsg", async (req, res) => {
     const {to, text, type} = req.body
 
     const validation = await messageSchema.validate(req.body, {abortEarly: false})
-    console.log(validation)
+
     if (validation.error) {
         const error = validation.error.details.map((detail) => detail.message);
         res.status(422).send(error);
         return
     }
+
     try {
         await collectionMessages.updateOne(
             { _id: ObjectId(id) },
